@@ -6,127 +6,114 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
-
-$user_id = $_SESSION['user_id'];
-
-// Fetch distinct orders
-// Fetch grouped orders per user
-// Remove SUM(order_total)
-$orders = $conn->query("SELECT order_id,
-                        MAX(order_status) as order_status,
-                        MAX(accepted_at) as accepted_at, 
-                        MAX(prepared_at) as prepared_at, 
-                        MAX(on_the_way_at) as on_the_way_at, 
-                        MAX(delivered_at) as delivered_at 
-                        FROM orders 
-                        WHERE user_id = $user_id 
-                        GROUP BY order_id 
-                        ORDER BY MAX(id) DESC");
-
-
-
-// Duration helper function
-function getDuration($start, $end) {
-    if ($start && $end) {
-        $startTime = new DateTime($start);
-        $endTime = new DateTime($end);
-        $interval = $startTime->diff($endTime);
-        return $interval->format(' %Im');
-    }
-    return "-";
-}
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Order Status</title>
+    <title>My Orders</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script>
-    function updateTimer(orderId, startTime, status) {
-        const now = new Date().getTime();
-        const start = new Date(startTime).getTime();
-        let diff = now - start;
-
-        const timer = document.getElementById('timer_' + orderId);
-        if (diff > 0 && timer) {
-            let minutes = Math.floor(diff / 60000);
-            let seconds = Math.floor((diff % 60000) / 1000);
-            timer.innerHTML = `${status} time: ${minutes}m ${seconds}s`;
-        }
-    }
-    </script>
 </head>
 <body>
 <div class="container mt-5">
-    <h2>📦 Your Order Status</h2>
-    <a href="index.php" class="btn btn-secondary">← Back to Home</a>
-    <?php if (isset($_GET['order_success'])): ?>
-        <div class="alert alert-success">🎉 Order placed successfully! You can track its status below.</div>
-    <?php endif; ?>
+    <a href="menu.php">Back to menu</a>
+    <h2>📦 My Orders</h2>
 
-    <?php while ($order = $orders->fetch_assoc()): ?>
-        <div class="card mt-4">
-            <div class="card-header">
-                <strong>Order ID:</strong> <?= $order['order_id'] ?> - 
-                <strong>Status:</strong> <?= ucfirst($order['order_status']) ?>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                   <tbody>
 <?php
-    $orderId = $order['order_id'];
-    $items = $conn->query("SELECT item_name, item_qty, item_price FROM orders WHERE order_id = '$orderId'");
-    $orderTotal = 0; // ✅ Initialize total
-    while ($item = $items->fetch_assoc()):
-        $subtotal = $item['item_qty'] * $item['item_price'];
-        $orderTotal += $subtotal;
+$user_id = $_SESSION['user_id'];
+
+$sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows == 0) {
+    echo "<div class='alert alert-info'>You haven't placed any orders yet.</div>";
+} else {
+    while ($order = $result->fetch_assoc()) {
+        $order_id = $order['order_id'];
+        $payment_method = $order['payment_method'];
+        $created_at = $order['created_at'];
+        $order_status = $order['order_status'];
+        $created_at_iso = date("c", strtotime($created_at)); // ISO format
+
+        // Normalize order status to lowercase for consistent comparison
+        $normalized_status = strtolower($order_status);
+
+        echo "<div class='card mb-4 shadow'>";
+        echo "<div class='card-body'>";
+        echo "<h5 class='card-title'>Order ID: $order_id</h5>";
+        echo "<p><strong>Payment Method:</strong> " . ($payment_method === 'COD' ? 'Cash on Delivery (COD)' : 'Online Payment') . "</p>";
+        echo "<p><strong>Status:</strong> $order_status</p>";
+
+        // Show timer only if order is not delivered or cancelled
+        if ($normalized_status !== 'delivered' && $normalized_status !== 'cancelled') {
+            echo "<p><strong>Estimated Delivery:</strong> <span id='timer_$order_id'>⏳ Loading...</span></p>";
+        }
+
+        echo "<p><strong>Name:</strong> {$order['customer_name']}<br><strong>Phone:</strong> {$order['customer_phone']}<br><strong>Address:</strong> {$order['customer_address']}</p>";
+        echo "<table class='table table-bordered'><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>";
+
+        $itemStmt = $conn->prepare("SELECT * FROM order_items WHERE order_id = ?");
+        $itemStmt->bind_param("s", $order_id);
+        $itemStmt->execute();
+        $items = $itemStmt->get_result();
+
+        $total = 0;
+        while ($item = $items->fetch_assoc()) {
+            $price = (float)$item['item_price'];
+            $qty = (int)$item['item_qty'];
+            $subtotal = $price * $qty;
+            $total += $subtotal;
+
+            echo "<tr>
+                <td>{$item['item_name']}</td>
+                <td>{$qty}</td>
+                <td>₹" . number_format($price, 2) . "</td>
+                <td>₹" . number_format($subtotal, 2) . "</td>
+            </tr>";
+        }
+
+        echo "</table>";
+        echo "<p class='fw-bold'>Total: ₹" . number_format($total, 2) . "</p>";
+        echo "</div></div>";
+
+        // Timer script only for non-delivered or non-cancelled orders
+        if ($normalized_status !== 'delivered' && $normalized_status !== 'cancelled') {
+            echo "<script>
+            window.addEventListener('load', function() {
+                startCountdown('$order_id', '$created_at_iso');
+            });
+            </script>";
+        }
+    }
+}
 ?>
-    <tr>
-        <td><?= htmlspecialchars($item['item_name']) ?></td>
-        <td><?= $item['item_qty'] ?></td>
-        <td>₹<?= $item['item_price'] ?></td>
-        <td>₹<?= $subtotal ?></td>
-    </tr>
-<?php endwhile; ?>
-</tbody>
-
-                </table>
-
-                <p><strong>Total Amount:</strong> ₹<?= $orderTotal ?></p>
-
-                <p id="timer_<?= $orderId ?>">Loading timer...</p>
-
-                <!-- ⏱ Duration Info -->
-                <div class="mt-3">
-                    <strong>Durations:</strong>
-                    <ul>
-                        <li>Accept → Prepare: <?= getDuration($order['accepted_at'], $order['prepared_at']) ?></li>
-                        <li>Prepare → On The Way: <?= getDuration($order['prepared_at'], $order['on_the_way_at']) ?></li>
-                        <li>On The Way → Delivered: <?= getDuration($order['on_the_way_at'], $order['delivered_at']) ?></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <script>
-        <?php if ($order['order_status'] == 'preparing' && $order['accepted_at']): ?>
-            setInterval(() => updateTimer("<?= $orderId ?>", "<?= $order['accepted_at'] ?>", "Preparation"), 1000);
-        <?php elseif ($order['order_status'] == 'on_the_way' && $order['on_the_way_at']): ?>
-            setInterval(() => updateTimer("<?= $orderId ?>", "<?= $order['on_the_way_at'] ?>", "Delivery"), 1000);
-        <?php else: ?>
-            document.getElementById("timer_<?= $orderId ?>").innerText = "Waiting for next stage...";
-        <?php endif; ?>
-        </script>
-    <?php endwhile; ?>
 </div>
+
+<script>
+function startCountdown(orderId, createdAt) {
+    const timerElement = document.getElementById('timer_' + orderId);
+    const startTime = new Date(createdAt).getTime();
+    const endTime = startTime + (20 * 60 * 1000); // 20 minutes
+
+    const interval = setInterval(() => {
+        const now = new Date().getTime();
+        const diff = endTime - now;
+
+        if (diff <= 0) {
+            clearInterval(interval);
+            timerElement.innerHTML = "⏱️ Time Over";
+            timerElement.style.color = "red";
+        } else {
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            timerElement.innerHTML = `${minutes}m ${seconds}s`;
+        }
+    }, 1000);
+}
+</script>
+
 </body>
 </html>

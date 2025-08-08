@@ -179,7 +179,6 @@
                     ₹350
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="farmland pizza">
   <input type="hidden" name="item_price" value="350">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -210,7 +209,6 @@
                     ₹200
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="double cheese burger">
   <input type="hidden" name="item_price" value="200">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -240,7 +238,6 @@
                     ₹250
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="chicken cheese pizza">
   <input type="hidden" name="item_price" value="250">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -271,7 +268,6 @@
                     ₹260
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="white sauce pasta">
   <input type="hidden" name="item_price" value="260">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -302,7 +298,6 @@
                     ₹100
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="French fries">
   <input type="hidden" name="item_price" value="100">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -333,7 +328,6 @@
                     ₹170
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="cheese pizza">
   <input type="hidden" name="item_price" value="170">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -364,7 +358,6 @@
                     ₹90
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="single patty burger">
   <input type="hidden" name="item_price" value="90">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -400,7 +393,6 @@
                     ₹150
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="chicken burger">
   <input type="hidden" name="item_price" value="150">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">
@@ -431,7 +423,6 @@
                     ₹210
                     </h6>
                     <form action="order.php" method="POST" class="d-flex align-items-center">
-                    <form action="order.php" method="POST">
   <input type="hidden" name="item_name" value="red sauce pasta">
   <input type="hidden" name="item_price" value="210">
   <input type="number" name="item_qty" value="1" min="1" class="form-control" style="width: 70px; margin-right: 7px;">

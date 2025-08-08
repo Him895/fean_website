@@ -3,17 +3,42 @@ include 'connection.php';
 date_default_timezone_set('Asia/Kolkata');
 
 // Handle order status update
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['order_id'], $_POST['action_column'])) {
-  $orderId = $_POST['order_id'];
-  $column = $_POST['action_column'];
-  $now = date('Y-m-d H:i:s');
 
-  $update = $conn->query("UPDATE orders SET $column = '$now' WHERE order_id = '$orderId'");
-  if ($update) {
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
-  }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id'], $_POST['action_column'])) {
+    $order_id = $_POST['order_id'];
+    $action_column = $_POST['action_column'];
+
+    // Sanitize allowed columns only
+    $allowed_columns = ['accepted_at', 'prepared_at', 'on_the_way_at', 'delivered_at'];
+    if (in_array($action_column, $allowed_columns)) {
+        $now = date('Y-m-d H:i:s');
+        $status_map = [
+  'accepted_at' => 'accepted',
+  'prepared_at' => 'prepared',
+  'on_the_way_at' => 'on_the_way',
+  'delivered_at' => 'delivered'
+];
+
+if (in_array($action_column, $allowed_columns)) {
+    $now = date('Y-m-d H:i:s');
+    $new_status = $status_map[$action_column];
+
+    $stmt = $conn->prepare("UPDATE orders SET $action_column = ?, order_status = ? WHERE order_id = ?");
+    $stmt->bind_param("sss", $now, $new_status, $order_id);
+    if ($stmt->execute()) {
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    } else {
+        echo "Failed to update: " . $conn->error;
+    }
+    $stmt->close();
 }
+
+    }
+}
+
+
+
 
 // Fetch all orders
 $orders_result = $conn->query("SELECT * FROM orders ORDER BY created_at ASC");
@@ -156,30 +181,46 @@ function Duration($start, $end) {
         </thead>
         <tbody>
         <?php
-        $orders_result = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
+$orders_result = $conn->query("
+  SELECT 
+    o.*, 
+    i.item_name, 
+    i.item_qty, 
+    i.item_price 
+  FROM orders o 
+  LEFT JOIN order_items i ON o.order_id = i.order_id 
+  ORDER BY o.created_at DESC
+");
         $orders_grouped = [];
         while ($row = $orders_result->fetch_assoc()) {
           $orders_grouped[$row['order_id']][] = $row;
         }
 
-        foreach ($orders_grouped as $order_id => $items):
-          $first = $items[0];
-          $total_qty = 0;
-          $item_list = "";
-          foreach ($items as $item) {
-            $total_qty += $item['item_qty'];
-            $item_list .= htmlspecialchars($item['item_name']) . " (" . $item['item_qty'] . "), ";
-          }
-          $item_list = rtrim($item_list, ', ');
-          $total_price = $first['order_total'];
-        ?>
-        <tr>
-          <td><?= $order_id ?></td>
-          <td><?= $item_list ?></td>
-          <td><?= $total_qty ?></td>
-          <td>₹<?= number_format($total_price, 2) ?></td>
-          <td><?= $first['created_at'] ?></td>
-          <td>
+      foreach ($orders_grouped as $order_id => $items):
+    $first = $items[0];
+    $total_qty = 0;
+    $item_list = "";
+    $total_price = 0;
+
+    foreach ($items as $item) {
+        $qty = (int)$item['item_qty'];
+        $price = (float)$item['item_price'];
+
+        $total_qty += $qty;
+        $total_price += $qty * $price;
+
+        $item_list .= htmlspecialchars($item['item_name']) . " (" . $qty . " x ₹" . number_format($price, 2) . "), ";
+    }
+
+    $item_list = rtrim($item_list, ', ');
+?>
+<tr>
+  <td><?= $order_id ?></td>
+  <td><?= $item_list ?></td>
+  <td><?= $total_qty ?></td>
+  <td>₹<?= number_format($total_price, 2) ?></td>
+  <td><?= $first['created_at'] ?></td>
+
             <?php
             if (!$first['accepted_at']) echo "Pending";
             elseif (!$first['prepared_at']) echo "Accepted";
