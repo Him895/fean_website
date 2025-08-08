@@ -1,6 +1,6 @@
 #  Food Ordering System with Payment Integration
 
-This is a Food Ordering System built using **PHP, MySQL, Bootstrap**, with **[Payment Gateway Name]** integration for secure online payments.
+This is a Food Ordering System built using **PHP, MySQL, Bootstrap**, with **[Payment Gateway Razorpay]** integration for secure online payments.
 
 ##  Features
 - User login & registration
@@ -13,7 +13,7 @@ This is a Food Ordering System built using **PHP, MySQL, Bootstrap**, with **[Pa
 - PHP
 - MySQL
 - Bootstrap 5
-- [Payment Gateway Name]
+- [Payment Gateway Razorpay]
 
 ##  Setup Instructions
 1. Clone this repo
